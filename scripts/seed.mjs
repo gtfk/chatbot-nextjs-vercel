@@ -1,8 +1,11 @@
-// scripts/seed.mjs
+// scripts/seed.mjs (Corregido)
 import { createClient } from '@supabase/supabase-js';
 import { promises as fs } from 'fs';
 import pdf from 'pdf-parse';
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
+// --- CORRECCIÓN AQUÍ ---
+// La herramienta está dentro de @langchain/community
+import { RecursiveCharacterTextSplitter } from '@langchain/community/text_splitter';
+// --- FIN DE LA CORRECCIÓN ---
 import { HuggingFaceInferenceAPIEmbeddings } from '@langchain/community/embeddings/hf';
 
 // 1. Carga tus variables de entorno (desde los Secrets de Codespaces)
@@ -24,11 +27,11 @@ const embeddings = new HuggingFaceInferenceAPIEmbeddings({
 
 async function seedPDF() {
   console.log('Empezando el proceso de sembrado (seeding) del PDF...');
-
+  
   // 1. Cargar el PDF desde el Codespace
   const pdfData = await fs.readFile('reglamento.pdf');
   const data = await pdf(pdfData);
-
+  
   console.log(`PDF cargado. ${data.numpages} páginas.`);
 
   // 2. Dividir el texto en trozos

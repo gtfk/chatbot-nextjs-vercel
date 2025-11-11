@@ -1,12 +1,11 @@
-// scripts/seed.mjs (Corregido)
-import { createClient } from '@supabase/supabase-js';
-import { promises as fs } from 'fs';
-import pdf from 'pdf-parse';
-// --- CORRECCIÓN AQUÍ ---
-// La herramienta está dentro de @langchain/community
-import { RecursiveCharacterTextSplitter } from '@langchain/community/text_splitter';
-// --- FIN DE LA CORRECCIÓN ---
-import { HuggingFaceInferenceAPIEmbeddings } from '@langchain/community/embeddings/hf';
+// scripts/seed.js (Corregido con sintaxis CommonJS)
+
+// Importamos las librerías con require
+const { createClient } = require('@supabase/supabase-js');
+const fs = require('fs').promises;
+const pdf = require('pdf-parse');
+const { RecursiveCharacterTextSplitter } = require('langchain/text_splitter');
+const { HuggingFaceInferenceAPIEmbeddings } = require('@langchain/community/embeddings/hf');
 
 // 1. Carga tus variables de entorno (desde los Secrets de Codespaces)
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -25,10 +24,12 @@ const embeddings = new HuggingFaceInferenceAPIEmbeddings({
   model: 'sentence-transformers/all-MiniLM-L6-v2',
 });
 
-async function seedPDF() {
+// Usamos una función autoejecutable porque 'await' no es permitido
+// en el nivel superior de un script CommonJS.
+(async () => {
   console.log('Empezando el proceso de sembrado (seeding) del PDF...');
   
-  // 1. Cargar el PDF desde el Codespace
+  // 1. Cargar el PDF
   const pdfData = await fs.readFile('reglamento.pdf');
   const data = await pdf(pdfData);
   
@@ -53,24 +54,21 @@ async function seedPDF() {
     console.log(`Generando embedding para el trozo ${index + 1} de ${documents.length}...`);
   }
 
-  // 4. Limpiar la tabla antigua (opcional pero recomendado)
+  // 4. Limpiar la tabla antigua
   console.log('Borrando documentos antiguos de Supabase...');
   await supabase.from('documents').delete().neq('id', 0); // Borra todo
 
   // 5. Insertar los nuevos documentos en Supabase
   console.log('Insertando nuevos documentos en Supabase (esto puede tardar)...');
-  // Supabase tiene un límite, así que insertamos en lotes de 100
   for (let i = 0; i < documentsToInsert.length; i += 100) {
     const batch = documentsToInsert.slice(i, i + 100);
     const { error } = await supabase.from('documents').insert(batch);
     if (error) {
       console.error('Error insertando lote:', error);
     } else {
-      console.log(`Lote ${i/100 + 1} insertado exitosamente.`);
+      console.log(`Lote ${Math.floor(i/100) + 1} insertado exitosamente.`);
     }
   }
 
   console.log('✅ ¡Sembrado completo! Tu PDF ahora está en la base de datos de Supabase.');
-}
-
-seedPDF();
+})();
